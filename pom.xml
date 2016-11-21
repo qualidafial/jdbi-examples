@@ -5,7 +5,7 @@
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>org.jdbi</groupId>
-  <artifactId>jdbi-tutorial</artifactId>
+  <artifactId>jdbi-examples</artifactId>
   <version>1.0-SNAPSHOT</version>
 
   <properties>
