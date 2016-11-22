@@ -1,5 +1,6 @@
 package org.jdbi.examples.v2;
 
+import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.jdbi.examples.v2.Example06Joins.PhoneType.MOBILE;
@@ -7,6 +8,7 @@ import static org.jdbi.examples.v2.Example06Joins.PhoneType.WORK;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
 
 import org.jdbi.examples.rule.DataSourceRule;
@@ -47,24 +49,54 @@ public class Example06Joins {
     }
 
     default Contact getFullContactById(int id) {
-      return getHandle().createQuery("select contact.id c_id, name, phone.id p_id, type, phone.phone "
-                                         + "from contact left join phone on contact.id = phone.contactId "
-                                         + "where contact.id = :id")
+      return getHandle().createQuery("select c.id c_id, c.name c_name, " 
+                                         + "p.id p_id, p.type p_type, p.phone p_phone "
+                                         + "from contact c left join phone p on c.id = p.contactId "
+                                         + "where c.id = :id")
           .bind("id", id)
           .fold(null, (contact, rs, ctx) -> {
             if (contact == null) {
-              contact = new Contact(rs.getInt("c_id"), rs.getString("name"));
+              contact = new Contact(rs.getInt("c_id"),
+                                    rs.getString("c_name"));
             }
 
             int phoneId = rs.getInt("p_id");
             if (!rs.wasNull()) {
               contact.addPhone(new Phone(phoneId,
-                                         PhoneType.valueOf(rs.getString("type")),
-                                         rs.getString("phone")));
+                                         PhoneType.valueOf(rs.getString("p_type")),
+                                         rs.getString("p_phone")));
             }
 
             return contact;
           });
+    }
+
+    default List<Contact> listFullContacts() {
+      return getHandle().createQuery("select c.id c_id, c.name c_name, "
+                                         + "p.id p_id, p.type p_type, p.phone p_phone "
+                                         + "from contact c left join phone p on c.id = p.contactId "
+                                         + "order by c.name")
+          .fold(new LinkedHashMap<Integer, Contact>(), (map, rs, ctx) -> {
+            int contactId = rs.getInt("c_id");
+            Contact contact = map.get(contactId);
+            if (contact == null) {
+              contact = new Contact(contactId,
+                                    rs.getString("c_name"));
+              map.put(contactId, contact);
+            }
+
+            int phoneId = rs.getInt("p_id");
+            if (!rs.wasNull()) {
+              contact.addPhone(new Phone(phoneId,
+                                         PhoneType.valueOf(rs.getString("p_type")),
+                                         rs.getString("p_phone")));
+            }
+
+            return map;
+          })
+          .values()
+          .stream()
+          .collect(toList());
     }
   }
 
@@ -96,6 +128,18 @@ public class Example06Joins {
           .extracting(Contact::getId, Contact::getName)
           .containsExactly(4, "Bob");
       assertThat(bob.getPhones())
+          .isEmpty();
+
+      List<Contact> fullContacts = dao.listFullContacts();
+      assertThat(fullContacts)
+          .extracting(Contact::getId, Contact::getName)
+          .containsExactly(tuple(1, "Alice"),
+                           tuple(4, "Bob"));
+      assertThat(fullContacts.get(0).getPhones())
+          .extracting(Phone::getId, Phone::getType, Phone::getPhone)
+          .containsExactly(tuple(2, WORK, "800-555-1234"),
+                           tuple(3, MOBILE, "801-555-1212"));
+      assertThat(fullContacts.get(1).getPhones())
           .isEmpty();
     }
   }

@@ -1,5 +1,6 @@
 package org.jdbi.examples.v3;
 
+import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.jdbi.examples.v3.Example06Joins.PhoneType.MOBILE;
@@ -7,6 +8,7 @@ import static org.jdbi.examples.v3.Example06Joins.PhoneType.WORK;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
 
 import org.jdbi.examples.rule.DataSourceRule;
@@ -67,6 +69,28 @@ public class Example06Joins {
             return contact;
           });
     }
+
+    default List<Contact> listFullContacts() {
+      return getHandle().createQuery("select c.id c_id, c.name c_name, "
+                                         + "p.id p_id, p.type p_type, p.phone p_phone "
+                                         + "from contact c left join phone p on c.id = p.contactId "
+                                         + "order by c.name")
+          .registerRowMapper(ConstructorMapper.of(Contact.class, "c_"))
+          .registerRowMapper(ConstructorMapper.of(Phone.class, "p_"))
+          .reduceRows(new LinkedHashMap<Integer, Contact>(), (map, rowView) -> {
+            Contact contact = map.computeIfAbsent(rowView.getColumn("c_id", Integer.class),
+                                                  id -> rowView.getRow(Contact.class));
+
+            if (rowView.getColumn("p_id", Integer.class) != null) {
+              contact.addPhone(rowView.getRow(Phone.class));
+            }
+
+            return map;
+          })
+          .values()
+          .stream()
+          .collect(toList());
+    }
   }
 
   @Test
@@ -98,6 +122,18 @@ public class Example06Joins {
           .extracting(Contact::getId, Contact::getName)
           .containsExactly(4, "Bob");
       assertThat(bob.getPhones())
+          .isEmpty();
+
+      List<Contact> fullContacts = dao.listFullContacts();
+      assertThat(fullContacts)
+          .extracting(Contact::getId, Contact::getName)
+          .containsExactly(tuple(1, "Alice"),
+                           tuple(4, "Bob"));
+      assertThat(fullContacts.get(0).getPhones())
+          .extracting(Phone::getId, Phone::getType, Phone::getPhone)
+          .containsExactly(tuple(2, WORK, "800-555-1234"),
+                           tuple(3, MOBILE, "801-555-1212"));
+      assertThat(fullContacts.get(1).getPhones())
           .isEmpty();
     });
   }
