@@ -22,37 +22,37 @@ public class Example03RegisterRowMapper {
   @Test
   public void test() throws Exception {
     Jdbi jdbi = Jdbi.create(ds.getDataSource());
-    jdbi.registerRowMapper(new SomethingMapper());
+    jdbi.registerRowMapper(new ContactMapper());
 
     try (Handle h = jdbi.open()) {
-      h.execute("create table something (id int primary key, name varchar(100))");
+      h.execute("create table contacts (id int primary key, name varchar(100))");
 
-      h.execute("insert into something (id, name) values (?, ?)", 1, "Alice");
-      h.execute("insert into something (id, name) values (?, ?)", 2, "Bob");
+      h.execute("insert into contacts (id, name) values (?, ?)", 1, "Alice");
+      h.execute("insert into contacts (id, name) values (?, ?)", 2, "Bob");
 
-      List<Something> list = h.createQuery("select * from something order by id")
-          .mapTo(Something.class)
+      List<Contact> list = h.createQuery("select * from contacts order by id")
+          .mapTo(Contact.class)
           .list();
       assertThat(list)
-          .extracting(Something::getId, Something::getName)
+          .extracting(Contact::getId, Contact::getName)
           .containsExactly(tuple(1, "Alice"),
                            tuple(2, "Bob"));
 
-      Something bob = h.createQuery("select * from something where id = :id")
+      Contact bob = h.createQuery("select * from contacts where id = :id")
           .bind("id", 2)
-          .mapTo(Something.class)
+          .mapTo(Contact.class)
           .findOnly();
       assertThat(bob)
-          .extracting(Something::getId, Something::getName)
+          .extracting(Contact::getId, Contact::getName)
           .containsExactly(2, "Bob");
     }
   }
 
-  public static class Something {
+  public static class Contact {
     private final int id;
     private final String name;
 
-    public Something(int id, String name) {
+    public Contact(int id, String name) {
       this.id = id;
       this.name = name;
     }
@@ -66,12 +66,12 @@ public class Example03RegisterRowMapper {
     }
   }
 
-  public static class SomethingMapper implements RowMapper<Something> {
+  public static class ContactMapper implements RowMapper<Contact> {
     @Override
-    public Something map(ResultSet r, StatementContext ctx) throws SQLException {
+    public Contact map(ResultSet r, StatementContext ctx) throws SQLException {
       int id = r.getInt("id");
       String name = r.getString("name");
-      return new Something(id, name);
+      return new Contact(id, name);
     }
   }
 

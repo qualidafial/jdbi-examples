@@ -35,33 +35,33 @@ public class Example04ColumnMapper {
       Money tenDollars = Money.of(USD, 10);
       Money fiveDollars = Money.of(USD, 5);
 
-      h.execute("create table something (id int primary key, name varchar(100), amount decimal)");
+      h.execute("create table accounts (id int primary key, name varchar(100), balance decimal)");
 
-      h.execute("insert into something (id, name, amount) values (?, ?, ?)", 1, "Alice", tenDollars);
-      h.execute("insert into something (id, name, amount) values (?, ?, ?)", 2, "Bob", fiveDollars);
+      h.execute("insert into accounts (id, name, balance) values (?, ?, ?)", 1, "Alice", tenDollars);
+      h.execute("insert into accounts (id, name, balance) values (?, ?, ?)", 2, "Bob", fiveDollars);
 
-      List<Something> list = h.createQuery("select * from something order by id")
-          .mapTo(Something.class)
+      List<Account> list = h.createQuery("select * from accounts order by id")
+          .mapTo(Account.class)
           .list();
       assertThat(list)
-          .extracting(Something::getId, Something::getName, Something::getAmount)
+          .extracting(Account::getId, Account::getName, Account::getBalance)
           .containsExactly(tuple(1, "Alice", tenDollars),
                            tuple(2, "Bob", fiveDollars));
 
-      Something bob = h.createQuery("select * from something where id = :id")
+      Account bob = h.createQuery("select * from accounts where id = :id")
           .bind("id", 2)
-          .mapTo(Something.class)
+          .mapTo(Account.class)
           .first();
       assertThat(bob)
-          .extracting(Something::getId, Something::getName, Something::getAmount)
+          .extracting(Account::getId, Account::getName, Account::getBalance)
           .containsExactly(2, "Bob", fiveDollars);
     }
   }
 
-  public static class Something {
+  public static class Account {
     private int id;
     private String name;
-    private Money amount;
+    private Money balance;
 
     public int getId() {
       return id;
@@ -79,12 +79,12 @@ public class Example04ColumnMapper {
       this.name = name;
     }
 
-    public Money getAmount() {
-      return amount;
+    public Money getBalance() {
+      return balance;
     }
 
-    public void setAmount(Money amount) {
-      this.amount = amount;
+    public void setBalance(Money balance) {
+      this.balance = balance;
     }
   }
 

@@ -19,18 +19,18 @@ public class Example01FluentApi {
     DBI dbi = new DBI(ds.getDataSource());
 
     try (Handle h = dbi.open()) {
-      h.execute("create table something (id int primary key, name varchar(100))");
+      h.execute("create table contacts (id int primary key, name varchar(100))");
 
-      h.execute("insert into something (id, name) values (?, ?)", 1, "Alice");
-      h.execute("insert into something (id, name) values (?, ?)", 2, "Bob");
+      h.execute("insert into contacts (id, name) values (?, ?)", 1, "Alice");
+      h.execute("insert into contacts (id, name) values (?, ?)", 2, "Bob");
 
-      List<String> names = h.createQuery("select name from something order by id")
+      List<String> names = h.createQuery("select name from contacts order by id")
           .mapTo(String.class)
           .list();
       assertThat(names)
           .containsExactly("Alice", "Bob");
 
-      String name = h.createQuery("select name from something where id = :id")
+      String name = h.createQuery("select name from contacts where id = :id")
           .bind("id", 1)
           .mapTo(String.class)
           .first();

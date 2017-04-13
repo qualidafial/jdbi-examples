@@ -26,21 +26,21 @@ public class Example06Joins {
   public DataSourceRule ds = new DataSourceRule();
 
   public interface ContactDao extends GetHandle, AutoCloseable {
-    @SqlUpdate("create table contact (id int primary key, name varchar(100))")
+    @SqlUpdate("create table contacts (id int primary key, name varchar(100))")
     void createContactTable();
 
-    @SqlUpdate("create table phone ("
+    @SqlUpdate("create table phones ("
         + "id int primary key, "
         + "contactId int, "
-        + "foreign key (contactId) references contact(id) on delete cascade, "
+        + "foreign key (contactId) references contacts(id) on delete cascade, "
         + "type varchar(20), "
         + "phone varchar(20))")
     void createPhoneTable();
 
-    @SqlUpdate("insert into contact (id, name) values (:id, :name)")
+    @SqlUpdate("insert into contacts (id, name) values (:id, :name)")
     void insertContact(@BindBean Contact contact);
 
-    @SqlBatch("INSERT INTO phone (id, contactId, type, phone) VALUES (:id, :contactId, :type, :phone)")
+    @SqlBatch("INSERT INTO phones (id, contactId, type, phone) VALUES (:id, :contactId, :type, :phone)")
     void insertPhones(@BindBean List<Phone> phones, @Bind("contactId") int contactId);
 
     default void insertFullContact(Contact contact) {
@@ -51,7 +51,7 @@ public class Example06Joins {
     default Contact getFullContactById(int id) {
       return getHandle().createQuery("select c.id c_id, c.name c_name, " 
                                          + "p.id p_id, p.type p_type, p.phone p_phone "
-                                         + "from contact c left join phone p on c.id = p.contactId "
+                                         + "from contacts c left join phones p on c.id = p.contactId "
                                          + "where c.id = :id")
           .bind("id", id)
           .fold(null, (contact, rs, ctx) -> {
@@ -74,7 +74,7 @@ public class Example06Joins {
     default List<Contact> listFullContacts() {
       return getHandle().createQuery("select c.id c_id, c.name c_name, "
                                          + "p.id p_id, p.type p_type, p.phone p_phone "
-                                         + "from contact c left join phone p on c.id = p.contactId "
+                                         + "from contacts c left join phones p on c.id = p.contactId "
                                          + "order by c.name")
           .fold(new LinkedHashMap<Integer, Contact>(), (map, rs, ctx) -> {
             int contactId = rs.getInt("c_id");

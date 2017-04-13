@@ -24,34 +24,34 @@ public class Example02RowMapper {
     DBI dbi = new DBI(ds.getDataSource());
 
     try (Handle h = dbi.open()) {
-      h.execute("create table something (id int primary key, name varchar(100))");
+      h.execute("create table contacts (id int primary key, name varchar(100))");
 
-      h.execute("insert into something (id, name) values (?, ?)", 1, "Alice");
-      h.execute("insert into something (id, name) values (?, ?)", 2, "Bob");
+      h.execute("insert into contacts (id, name) values (?, ?)", 1, "Alice");
+      h.execute("insert into contacts (id, name) values (?, ?)", 2, "Bob");
 
-      List<Something> list = h.createQuery("select * from something order by id")
-          .map(new SomethingMapper())
+      List<Contact> list = h.createQuery("select * from contacts order by id")
+          .map(new ContactMapper())
           .list();
       assertThat(list)
-          .extracting(Something::getId, Something::getName)
+          .extracting(Contact::getId, Contact::getName)
           .containsExactly(tuple(1, "Alice"),
                            tuple(2, "Bob"));
 
-      Something bob = h.createQuery("select * from something where id = :id")
+      Contact bob = h.createQuery("select * from contacts where id = :id")
           .bind("id", 2)
-          .map(new SomethingMapper())
+          .map(new ContactMapper())
           .first();
       assertThat(bob)
-          .extracting(Something::getId, Something::getName)
+          .extracting(Contact::getId, Contact::getName)
           .containsExactly(2, "Bob");
     }
   }
 
-  public static class Something {
+  public static class Contact {
     private final int id;
     private final String name;
 
-    public Something(int id, String name) {
+    public Contact(int id, String name) {
       this.id = id;
       this.name = name;
     }
@@ -65,12 +65,12 @@ public class Example02RowMapper {
     }
   }
 
-  public static class SomethingMapper implements ResultSetMapper<Something> {
+  public static class ContactMapper implements ResultSetMapper<Contact> {
     @Override
-    public Something map(int index, ResultSet r, StatementContext ctx) throws SQLException {
+    public Contact map(int index, ResultSet r, StatementContext ctx) throws SQLException {
       int id = r.getInt("id");
       String name = r.getString("name");
-      return new Something(id, name);
+      return new Contact(id, name);
     }
   }
 

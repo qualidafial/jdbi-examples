@@ -33,67 +33,64 @@ public class Example05SqlObjectApi {
   @RegisterMapperFactory(BeanMapperFactory.class)
   @RegisterColumnMapper(MoneyMapper.class)
   @RegisterArgumentFactory(MoneyArgumentFactory.class)
-  public interface SomethingDao extends AutoCloseable {
-    @SqlUpdate("create table something (id int primary key, name varchar(100), amount decimal)")
+  public interface AccountDao extends AutoCloseable {
+    @SqlUpdate("create table accounts (id int primary key, name varchar(100), balance decimal)")
     void createTable();
 
-    @SqlUpdate("insert into something (id, name, amount) values (:id, :name, :amount)")
-    void insert(@BindBean Something something);
+    @SqlUpdate("insert into accounts (id, name, balance) values (:id, :name, :balance)")
+    void insert(@BindBean Account account);
 
-    @SqlUpdate("update something set name = :name, amount = :amount where id = :id")
-    void update(@BindBean Something something);
+    @SqlUpdate("update accounts set name = :name, balance = :balance where id = :id")
+    void update(@BindBean Account account);
 
-    @SqlQuery("select * from something order by id")
-    List<Something> list();
+    @SqlQuery("select * from accounts order by id")
+    List<Account> list();
 
-    @SqlQuery("select * from something where id = :id")
-    Something getById(@Bind("id") int id);
+    @SqlQuery("select * from accounts where id = :id")
+    Account getById(@Bind("id") int id);
   }
 
   @Test
   public void test() throws Exception {
     DBI dbi = new DBI(ds.getDataSource());
-//    dbi.registerMapper(new BeanMapperFactory());
-//    dbi.registerColumnMapper(new MoneyMapper());
-//    dbi.registerArgumentFactory(new MoneyArgumentFactory());
 
-    try (SomethingDao dao = dbi.open(SomethingDao.class)) {
+    try (AccountDao dao = dbi.open(AccountDao.class)) {
       Money tenDollars = Money.of(USD, 10);
       Money fiveDollars = Money.of(USD, 5);
 
       dao.createTable();
-      dao.insert(new Something(1, "Alice", tenDollars));
-      dao.insert(new Something(2, "Bob", fiveDollars));
+      dao.insert(new Account(1, "Alice", tenDollars));
+      dao.insert(new Account(2, "Bob", fiveDollars));
 
       assertThat(dao.list())
-          .extracting(Something::getId, Something::getName, Something::getAmount)
+          .extracting(Account::getId, Account::getName, Account::getBalance)
           .containsExactly(tuple(1, "Alice", tenDollars),
                            tuple(2, "Bob", fiveDollars));
 
       assertThat(dao.getById(2))
-          .extracting(Something::getId, Something::getName, Something::getAmount)
+          .extracting(Account::getId, Account::getName, Account::getBalance)
           .containsExactly(2, "Bob", fiveDollars);
 
-      dao.update(new Something(2, "Robert", tenDollars));
+      dao.update(new Account(2, "Robert", tenDollars));
 
       assertThat(dao.getById(2))
-          .extracting(Something::getId, Something::getName, Something::getAmount)
+          .extracting(Account::getId, Account::getName, Account::getBalance)
           .containsExactly(2, "Robert", tenDollars);
     }
   }
 
-  public static class Something {
+  public static class Account {
     private int id;
     private String name;
-    private Money amount;
+    private Money balance;
 
-    public Something() {
+    public Account() {
     }
 
-    public Something(int id, String name, Money amount) {
+    public Account(int id, String name, Money balance) {
       this.id = id;
       this.name = name;
-      this.amount = amount;
+      this.balance = balance;
     }
 
     public int getId() {
@@ -112,12 +109,12 @@ public class Example05SqlObjectApi {
       this.name = name;
     }
 
-    public Money getAmount() {
-      return amount;
+    public Money getBalance() {
+      return balance;
     }
 
-    public void setAmount(Money amount) {
-      this.amount = amount;
+    public void setBalance(Money balance) {
+      this.balance = balance;
     }
   }
 
