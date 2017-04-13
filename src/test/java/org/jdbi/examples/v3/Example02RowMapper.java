@@ -10,8 +10,8 @@ import java.util.List;
 import org.jdbi.examples.rule.DataSourceRule;
 import org.jdbi.v3.core.Handle;
 import org.jdbi.v3.core.Jdbi;
-import org.jdbi.v3.core.StatementContext;
 import org.jdbi.v3.core.mapper.RowMapper;
+import org.jdbi.v3.core.statement.StatementContext;
 import org.junit.Rule;
 import org.junit.Test;
 

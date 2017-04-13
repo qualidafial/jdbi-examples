@@ -4,21 +4,21 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.joda.money.CurrencyUnit.USD;
 
-import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Types;
 import java.util.List;
-import java.util.Optional;
 
 import org.jdbi.examples.rule.DataSourceRule;
 import org.jdbi.v3.core.Handle;
 import org.jdbi.v3.core.Jdbi;
-import org.jdbi.v3.core.StatementContext;
+import org.jdbi.v3.core.argument.AbstractArgumentFactory;
 import org.jdbi.v3.core.argument.Argument;
-import org.jdbi.v3.core.argument.ArgumentFactory;
-import org.jdbi.v3.core.mapper.BeanMapper;
+import org.jdbi.v3.core.config.ConfigRegistry;
 import org.jdbi.v3.core.mapper.ColumnMapper;
+import org.jdbi.v3.core.mapper.reflect.BeanMapper;
+import org.jdbi.v3.core.statement.StatementContext;
 import org.joda.money.Money;
 import org.junit.Rule;
 import org.junit.Test;
@@ -30,9 +30,9 @@ public class Example04ColumnMapper {
   @Test
   public void test() throws Exception {
     Jdbi jdbi = Jdbi.create(ds.getDataSource());
-    jdbi.registerRowMapper(BeanMapper.of(Something.class));
+    jdbi.registerRowMapper(BeanMapper.factory(Something.class));
     jdbi.registerColumnMapper(new MoneyMapper());
-    jdbi.registerArgumentFactory(new MoneyArgumentFactory());
+    jdbi.registerArgument(new MoneyArgumentFactory());
 
     try (Handle h = jdbi.open()) {
       Money tenDollars = Money.of(USD, 10);
@@ -91,14 +91,15 @@ public class Example04ColumnMapper {
     }
   }
 
-  public static class MoneyArgumentFactory implements ArgumentFactory {
+  public static class MoneyArgumentFactory extends AbstractArgumentFactory<Money> {
+    protected MoneyArgumentFactory() {
+      super(Types.NUMERIC);
+    }
+
     @Override
-    public Optional<Argument> build(Type type, Object value, StatementContext ctx) {
-      if (Money.class.equals(type)) {
-        BigDecimal amount = value == null ? null : ((Money) value).getAmount();
-        return Optional.of((pos, stmt, context) -> stmt.setBigDecimal(pos, amount));
-      }
-      return Optional.empty();
+    protected Argument build(Money value, ConfigRegistry config) {
+      BigDecimal amount = value == null ? null : value.getAmount();
+      return (pos, stmt, context) -> stmt.setBigDecimal(pos, amount);
     }
   }
 

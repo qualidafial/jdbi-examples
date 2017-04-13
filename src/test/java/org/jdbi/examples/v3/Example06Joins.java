@@ -13,12 +13,12 @@ import java.util.List;
 
 import org.jdbi.examples.rule.DataSourceRule;
 import org.jdbi.v3.core.Jdbi;
-import org.jdbi.v3.core.mapper.ConstructorMapper;
-import org.jdbi.v3.sqlobject.BindBean;
-import org.jdbi.v3.sqlobject.SqlBatch;
+import org.jdbi.v3.core.mapper.reflect.ConstructorMapper;
+import org.jdbi.v3.sqlobject.SqlObject;
 import org.jdbi.v3.sqlobject.SqlObjectPlugin;
-import org.jdbi.v3.sqlobject.SqlUpdate;
-import org.jdbi.v3.sqlobject.mixins.GetHandle;
+import org.jdbi.v3.sqlobject.customizer.BindBean;
+import org.jdbi.v3.sqlobject.statement.SqlBatch;
+import org.jdbi.v3.sqlobject.statement.SqlUpdate;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -26,7 +26,7 @@ public class Example06Joins {
   @Rule
   public DataSourceRule ds = new DataSourceRule();
 
-  public interface ContactDao extends GetHandle {
+  public interface ContactDao extends SqlObject {
     @SqlUpdate("create table contact (id int primary key, name varchar(100))")
     void createContactTable();
 
@@ -55,8 +55,8 @@ public class Example06Joins {
                                          + "from contact left join phone on contact.id = phone.contactId "
                                          + "where contact.id = :id")
           .bind("id", id)
-          .registerRowMapper(ConstructorMapper.of(Contact.class, "c_"))
-          .registerRowMapper(ConstructorMapper.of(Phone.class, "p_"))
+          .registerRowMapper(ConstructorMapper.factory(Contact.class, "c_"))
+          .registerRowMapper(ConstructorMapper.factory(Phone.class, "p_"))
           .reduceRows(null, (contact, rowView) -> {
             if (contact == null) {
               contact = rowView.getRow(Contact.class);
@@ -75,8 +75,8 @@ public class Example06Joins {
                                          + "p.id p_id, p.type p_type, p.phone p_phone "
                                          + "from contact c left join phone p on c.id = p.contactId "
                                          + "order by c.name")
-          .registerRowMapper(ConstructorMapper.of(Contact.class, "c_"))
-          .registerRowMapper(ConstructorMapper.of(Phone.class, "p_"))
+          .registerRowMapper(ConstructorMapper.factory(Contact.class, "c_"))
+          .registerRowMapper(ConstructorMapper.factory(Phone.class, "p_"))
           .reduceRows(new LinkedHashMap<Integer, Contact>(), (map, rowView) -> {
             Contact contact = map.computeIfAbsent(rowView.getColumn("c_id", Integer.class),
                                                   id -> rowView.getRow(Contact.class));

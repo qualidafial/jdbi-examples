@@ -11,7 +11,7 @@
   <properties>
     <maven.compiler.source>1.8</maven.compiler.source>
     <maven.compiler.target>1.8</maven.compiler.target>
-    <jdbi3.version>3.0.0-alpha3</jdbi3.version>
+    <jdbi3.version>3.0.0-beta1</jdbi3.version>
   </properties>
 
   <dependencies>
